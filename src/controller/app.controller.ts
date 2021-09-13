@@ -21,7 +21,6 @@ export class AppController {
     @Body('from') from,
     @Body('arbitrator') arbitrator,
     @Body('amount') amount,
-
   ) {
     return this.appService.postTransaction(to, from, arbitrator, amount);
   }

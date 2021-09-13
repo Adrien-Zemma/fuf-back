@@ -1,4 +1,4 @@
-import {HttpException, Injectable} from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Airtable, { FieldSet, Table } from 'airtable';
 
@@ -36,11 +36,11 @@ export class AppService {
   ) {
     try {
       await this.transaction.create([
-        { fields: { to, from, arbitrator, amount, date:Date.now() } },
+        { fields: { to, from, arbitrator, amount, date: Date.now() } },
       ]);
       return { message: 'ok' };
     } catch (e) {
-      throw new HttpException(e, 400)
+      throw new HttpException(e, 400);
     }
   }
 }
