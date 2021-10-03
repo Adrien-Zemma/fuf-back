@@ -28,12 +28,19 @@ export class AppService {
     )[0]?.fields;
   }
 
-  async createBalance(user: string, balance = "0") {
-    return this.wallet.create({ identifiant: user, wallet: balance });
+  async createBalance(user: string, balance = 0) {
+    return this.wallet.create([{ identifiant: user, wallet: balance }]);
   }
 
-  async setBalance(user: string, balance) {
-    return this.wallet.update({ identifiant: user, wallet: "0" });
+  async setBalance(user: string, mouvement) {
+    const [balance] = await this.wallet.select({ filterByFormula: "identifiant=" + user }).all();
+    return this.wallet.update([{
+      id: balance.id,
+      fields: {
+        identifiant: user,
+        wallet: +balance.fields.wallet + mouvement
+      }
+    }]);
   }
 
   async postTransaction(
@@ -42,14 +49,12 @@ export class AppService {
     arbitrator: string,
     amount: number
   ) {
-    let toBalance;
-    let fromBalance;
     if (!(await this.getBalance(to))) {
-      toBalance = await this.createBalance(to);
+      await this.createBalance(to);
     }
 
     if (!(await this.getBalance(from))) {
-      fromBalance = await this.createBalance(from);
+      await this.createBalance(from);
     }
 
     const balance = await this.getBalance(from);
@@ -61,7 +66,7 @@ export class AppService {
       { fields: { to, from, arbitrator, amount, date: Date.now() } }
     ]);
 
-    await this.setBalance(to, fromBalance + amount);
-    await this.setBalance(from, toBalance - amount);
+    await this.setBalance(to, amount);
+    await this.setBalance(from, -amount);
   }
 }
