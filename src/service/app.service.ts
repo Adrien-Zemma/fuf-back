@@ -42,17 +42,17 @@ export class AppService {
     arbitrator: string,
     amount: number
   ) {
-    const balance = await this.getBalance(from);
-    if (+balance < amount) {
-      return { message: "L'empire ne fait pas crédit", status: 405 };
-    }
-
     if (!(await this.getBalance(to))) {
       await this.createBalance(to);
     }
 
     if (!(await this.getBalance(from))) {
       await this.createBalance(to);
+    }
+
+    const balance = await this.getBalance(from);
+    if (+balance < amount) {
+      return { message: "L'empire ne fait pas crédit", status: 405 };
     }
 
     try {
