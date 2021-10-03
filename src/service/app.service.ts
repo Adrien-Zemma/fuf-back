@@ -1,6 +1,6 @@
-import { HttpException, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import Airtable, { FieldSet, Table } from 'airtable';
+import { HttpException, Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import Airtable, { FieldSet, Table } from "airtable";
 
 @Injectable()
 export class AppService {
@@ -10,35 +10,56 @@ export class AppService {
 
   constructor(private configService: ConfigService) {
     this.airtable = new Airtable({
-      endpointUrl: 'https://api.airtable.com',
-      apiKey: this.configService.get('AIRTABLE_API_KEY'),
-    }).base('app5r4yXqDNXaIv7W');
+      endpointUrl: "https://api.airtable.com",
+      apiKey: this.configService.get("AIRTABLE_API_KEY")
+    }).base("app5r4yXqDNXaIv7W");
 
-    this.wallet = this.airtable.table('wallet');
-    this.transaction = this.airtable.table('transaction');
+    this.wallet = this.airtable.table("wallet");
+    this.transaction = this.airtable.table("transaction");
   }
 
   getHello(): string {
-    return 'Hello World!';
+    return "Hello World!";
   }
 
   async getBalance(user: string) {
     return (
-      await this.wallet.select({ filterByFormula: 'identifiant=' + user }).all()
+      await this.wallet.select({ filterByFormula: "identifiant=" + user }).all()
     )[0]?.fields;
   }
 
+  async createBalance(user: string, balance = "0") {
+    return this.wallet.create({ identifiant: user, wallet: balance });
+  }
+
+  async setBalance(user: string, balance) {
+    return this.wallet.update({ identifiant: user, wallet: "0" });
+  }
+
   async postTransaction(
-    to = '0',
+    to = "0",
     from: string,
     arbitrator: string,
-    amount: number,
+    amount: number
   ) {
+    const balance = await this.getBalance(from);
+    if (+balance < amount) {
+      return { message: "L'empire ne fait pas crédit", status: 405 };
+    }
+
+    if (!(await this.getBalance(to))) {
+      await this.createBalance(to);
+    }
+
+    if (!(await this.getBalance(from))) {
+      await this.createBalance(to);
+    }
+
     try {
       await this.transaction.create([
-        { fields: { to, from, arbitrator, amount, date: Date.now() } },
+        { fields: { to, from, arbitrator, amount, date: Date.now() } }
       ]);
-      return { message: 'ok' };
+      return { message: "ok" };
     } catch (e) {
       throw new HttpException(e, 400);
     }
