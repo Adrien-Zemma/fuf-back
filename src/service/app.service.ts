@@ -1,4 +1,4 @@
-import { HttpException, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import Airtable, { FieldSet, Table } from "airtable";
 
@@ -42,12 +42,14 @@ export class AppService {
     arbitrator: string,
     amount: number
   ) {
+    let toBalance;
+    let fromBalance;
     if (!(await this.getBalance(to))) {
-      await this.createBalance(to);
+      toBalance = await this.createBalance(to);
     }
 
     if (!(await this.getBalance(from))) {
-      await this.createBalance(to);
+      fromBalance = await this.createBalance(from);
     }
 
     const balance = await this.getBalance(from);
@@ -55,13 +57,11 @@ export class AppService {
       return { message: "L'empire ne fait pas crédit", status: 405 };
     }
 
-    try {
-      await this.transaction.create([
-        { fields: { to, from, arbitrator, amount, date: Date.now() } }
-      ]);
-      return { message: "ok" };
-    } catch (e) {
-      throw new HttpException(e, 400);
-    }
+    await this.transaction.create([
+      { fields: { to, from, arbitrator, amount, date: Date.now() } }
+    ]);
+
+    await this.setBalance(to, fromBalance + amount);
+    await this.setBalance(from, toBalance - amount);
   }
 }
